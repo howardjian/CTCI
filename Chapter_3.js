@@ -80,6 +80,11 @@ Stack.prototype.pop = function() {
   return oldLast;
 }
 
+Stack.prototype.peek = function() {
+  if(this.last === null) return null;
+  return this.last.data;
+}
+
 function SetOfStacks(maxSize) {
   this.maxSize = maxSize;
   this.stacks = [];
@@ -118,19 +123,163 @@ SetOfStacks.prototype.popAt = function(index) {
 // 3.4 Queue via Stacks: Implement a MyQueue class which implements a queue using two stacks.
 
 function MyQueue() {
+  this.oldStack = new Stack();
+  this.newStack = new Stack();
+}
 
+MyQueue.prototype.push = function(node) {
+  this.newStack.push(node);
+}
+
+MyQueue.prototype.pop = function() {
+  if(!this.oldStack.currentSize) {
+    while(this.newStack.currentSize) {
+      this.oldStack.push(this.newStack.pop());
+    }
+  }
+  this.oldStack.pop();
+}
+
+// 3.5 Sort Stack: Write a program to sort a stack such that the smallest items are on the top. You can use an additional temporary stack, but you may not copy the elements into any other data structure (such as an empty array). The stack supports the following operations: push, pop, peek, and isEmpty.
+
+const sortStack = (stack) => {
+  if(stack.currentSize <= 1) return stack;
+  const tempStack = new Stack();
+
+  while(stack.currentSize) {
+    if(!tempStack.currentSize) {
+      tempStack.push(stack.pop())
+    } else {
+      const topOfUnsortedStackVal = stack.peek();
+      const topOfTempStackVal = tempStack.peek();
+      if(topOfUnsortedStackVal <= topOfTempStackVal) {
+        const topOfStack = stack.pop();
+        while(tempStack.currentSize) {
+          stack.push(tempStack.pop());
+        }
+        stack.push(topOfStack);
+      } else {
+        tempStack.push(stack.pop());
+      }
+    }
+  }
+
+  while(tempStack.currentSize) {
+    stack.push(tempStack.pop());
+  }
+  return stack;
+}
+
+// 3.6 Animal Shelter: An animal shelter, which holds only dogs and cats, oeprates on a strictly "first in, first out" basis. People must adopt either the oldest (based on arrival time) of all animals at the shelter, or they can select whether they would prefer a dog or a cat (and will receive the oldest animal of that type). They cannot select which specific animal they would like. Create the data structures to maintain this system and implement operations such as enqueue, dequeueAny, dequeueDog, dequeueCat. You may use the built-in LinkedList data structure.
+
+function animalStack() {
+  this.currentSize = 0;
+  this.first = null;
+  this.last = null;
+}
+
+animalStack.prototype.peek = function() {
+  if(!this.first) return Number.POSITIVE_INFINITY;
+  return this.first.arrivalTime;
+}
+
+animalStack.prototype.push = function(animal) {
+  this.currentSize++;
+  if(!this.first) {
+    this.first = animal;
+    this.last = animal;
+  } else {
+    const oldLast = this.last;
+    oldLast.next = animal;
+    this.last = animal;
+  }
+}
+
+animalStack.prototype.pop = function() {
+  if(!this.first) throw new Error('nothing in the stack');
+
+  this.currentSize--;
+  const poppedAnimal = this.first;
+
+  if(this.first === this.last) {
+    this.first = null;
+    this.last = null;
+  } else {
+    this.first = poppedAnimal.next;
+  }
+
+  return poppedAnimal
 }
 
 
-const test = new SetOfStacks(2);
-const newNode1 = new Node(1);
-const newNode2 = new Node(2);
-const newNode3 = new Node(3);
+class Animal {
+  constructor() {
+    this.next = null;
+  }
+}
 
-test.push(newNode1);
-test.push(newNode2);
-test.push(newNode3);
-test.pop();
-test.pop();
+class Dog extends Animal {
+  constructor() {
+    super();
+    this.type = 'dog';
+  }
+}
 
-console.log(test);
+class Cat extends Animal {
+  constructor() {
+    super();
+    this.type = 'cat';
+  }
+}
+
+class AnimalShelter {
+  constructor() {
+    this.dogs = new animalStack();
+    this.cats = new animalStack();
+    this.fakeTime = 0;
+  }
+
+  enqueue(animal) {
+    animal.arrivalTime = this.fakeTime;
+    this.fakeTime++;
+
+    if(animal.type === 'cat') {
+      this.cats.push(animal);
+    }
+    if(animal.type === 'dog') {
+      this.dogs.push(animal);
+    }
+  }
+
+  dequeueAny() {
+    const dogDate = this.dogs.peek();
+    const catDate = this.cats.peek();
+
+    if(dogDate <= catDate || !this.cats.currentSize) {
+      return this.dogs.pop();
+    } else {
+      return this.cats.pop();
+    }
+  }
+
+  dequeueCat() {
+    return this.cats.pop();
+  }
+
+  dequeueDog() {
+    return this.dogs.pop();
+  }
+
+}
+
+const kitty = new Cat();
+const puppy = new Dog();
+const kitty1 = new Cat();
+const puppy1 = new Dog();
+
+const test = new AnimalShelter();
+test.enqueue(kitty);
+test.enqueue(puppy);
+test.enqueue(kitty1);
+
+console.log(test.dequeueCat());
